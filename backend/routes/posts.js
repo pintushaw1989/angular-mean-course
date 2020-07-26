@@ -94,14 +94,25 @@ router.get("", (req, res, next) => {
   //     content: "This is third post content",
   //   },
   // ];
-
-  Post.find().then((documents) => {
-    console.log(documents);
-    res.status(200).json({
-      message: "Posts fetched success",
-      posts: documents,
+  const pageSize = +req.query.pagesize;
+  const currentPage = +req.query.page;
+  const postQuery = Post.find();
+  let postCounts;
+  if (pageSize && currentPage) {
+    postQuery.skip(pageSize * (currentPage - 1)).limit(pageSize);
+  }
+  postQuery
+    .then((documents) => {
+      postCounts = documents;
+      return Post.count();
+    })
+    .then((count) => {
+      res.status(200).json({
+        message: "Posts fetched success",
+        posts: postCounts,
+        maxPosts: count,
+      });
     });
-  });
 });
 
 router.get("/:id", (req, res, next) => {

@@ -1,4 +1,6 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { PageEvent } from '@angular/material/paginator';
+
 import { Post } from './../post.model';
 import { PostsService } from './../posts.service';
 
@@ -17,18 +19,36 @@ export class PostListComponent implements OnInit {
   posts: Post[] = [];
   isLoading = false;
 
+  // MatPaginator Inputs
+  length = 0;
+  pageSize = 2;
+  pageSizeOptions: number[] = [1, 2, 3, 4, 5, 10];
+  currentPage = 1;
+
   constructor(public postsService: PostsService) {}
 
   ngOnInit() {
     this.isLoading = true;
-    this.postsService.getPosts();
-    this.postsService.getPostUpdateListener().subscribe((data: Post[]) => {
-      this.isLoading = false;
-      this.posts = data;
-    });
+    this.postsService.getPosts(this.pageSize, this.currentPage);
+    this.postsService
+      .getPostUpdateListener()
+      .subscribe((postData: { posts: Post[]; postCount: number }) => {
+        this.isLoading = false;
+        this.posts = postData.posts;
+        this.length = postData.postCount;
+      });
+  }
+
+  onPageChange(pageData: PageEvent) {
+    this.isLoading = true;
+    // console.log(pageData);
+    this.postsService.getPosts(pageData.pageSize, pageData.pageIndex + 1);
   }
 
   onDelete(postId: string) {
-    this.postsService.deletePost(postId);
+    this.isLoading = true;
+    this.postsService.deletePost(postId).subscribe(() => {
+      this.postsService.getPosts(this.pageSize, this.currentPage);
+    });
   }
 }
